@@ -1,3 +1,4 @@
 python-telegram-bot
-yt-dlp
+yt-dlp[default,curl-cffi]
 flask
+requests
