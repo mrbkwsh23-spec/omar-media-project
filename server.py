@@ -31,10 +31,10 @@ async def video_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     if not context.args:
         await update.message.reply_text("⚠️ يرجى كتابة الرابط بعد الأمر هكذا:\n`/video رابط_الفيديو`")
         return
+    # ✅ تصحيح جلب الرابط كعنصر نصي من المصفوفة
     url = context.args[0]
     status_msg = await update.message.reply_text("⏳ جاري سحب وتحميل الفيديو سحابياً.. يرجى الانتظار ثوانٍ...")
     
-    # ⚙️ تم تحديث الإعدادات هنا لتخطي حظر يوتيوب للروبوتات
     ydl_opts = {
         'format': 'best[ext=mp4]/best',
         'outtmpl': 'downloads/%(id)s_video.%(ext)s',
@@ -73,10 +73,10 @@ async def mp3_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     if not context.args:
         await update.message.reply_text("⚠️ يرجى كتابة الرابط بعد الأمر هكذا:\n`/mp3 رابط_الفيديو`")
         return
+    # ✅ تصحيح جلب الرابط كعنصر نصي من المصفوفة
     url = context.args[0]
     status_msg = await update.message.reply_text("⏳ جاري استخراج وتجهيز ملف الـ MP3 ناصع النقاء الحين...")
     
-    # ⚙️ تم تحديث الإعدادات هنا لتخطي حظر يوتيوب للروبوتات
     ydl_opts = {
         'format': 'bestaudio/best',
         'outtmpl': 'downloads/%(id)s_audio.%(ext)s',
