@@ -1,41 +1,26 @@
 import os
 import re
 import asyncio
+import threading
 import yt_dlp
-from flask import Flask, request
+from flask import Flask
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
 TOKEN = "8836632507:AAGe1mHJMBlRaLCUoveAJA_j700xUvxNWEQ"
-RENDER_EXTERNAL_URL = "https://onrender.com"
 
+# --- خادم ويب بسيط جداً لإبقاء سيرفر Render مستيقظاً ولن نستخدمه للرسائل ---
 app = Flask(__name__)
-
-# بناء كائن التطبيق بشكل عام
-application = Application.builder().token(TOKEN).build()
 
 @app.route('/')
 def home():
-    return "السيرفر مستقر ويعمل بنجاح! 🚀"
+    return "السيرفر مستقر والبوت شغال بالخلفية! 🚀"
 
-@app.route(f'/{TOKEN}', methods=['POST'])
-def telegram_webhook():
-    if request.method == "POST":
-        try:
-            update_data = request.get_json(force=True)
-            update = Update.de_json(update_data, application.bot)
-            
-            # جلب حلقة الأحداث الحالية وتشغيل معالجة التحديث بداخلها بأمان
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                loop.create_task(application.process_update(update))
-            else:
-                loop.run_until_complete(application.process_update(update))
-        except Exception as e:
-            print(f"Error processing update: {e}")
-            
-    return "OK", 200
+def run_flask():
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host="0.0.0.0", port=port)
 
+# --- كود البوت الأساسي والمستقر ---
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(
         f"🎬 مرحباً بك يا {update.effective_user.first_name} في بوت صيد الميديا المحصن! 🤖⚡\n\n"
@@ -58,9 +43,6 @@ async def video_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         'quiet': True,
         'no_warnings': True,
         'nocheckcertificate': True,
-        'http_headers': {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        }
     }
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -95,9 +77,6 @@ async def mp3_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         'quiet': True,
         'no_warnings': True,
         'nocheckcertificate': True,
-        'http_headers': {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        }
     }
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -114,23 +93,24 @@ async def mp3_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         try: await status_msg.delete()
         except: pass
 
-# إضافة الأوامر للبوت
-application.add_handler(CommandHandler("start", start))
-application.add_handler(CommandHandler("video", video_command))
-application.add_handler(CommandHandler("mp3", mp3_command))
-
-# دالة غير متزامنة لتهيئة البوت وضبط الـ Webhook قبل تشغيل Flask
-async def init_bot():
+def main():
     if not os.path.exists('downloads'):
         os.makedirs('downloads')
-    await application.initialize()
-    await application.bot.set_webhook(url=f"{RENDER_EXTERNAL_URL}/{TOKEN}")
-    print(f"[+] Webhook successfully linked to {RENDER_EXTERNAL_URL}")
 
-# تشغيل التهيئة
-loop = asyncio.get_event_loop()
-loop.run_until_complete(init_bot())
+    # 1️⃣ تشغيل خادم Flask في خلفية مستقلة تماماً لإرضاء Render
+    flask_thread = threading.Thread(target=run_flask)
+    flask_thread.daemon = True
+    flask_thread.start()
+
+    # 2️⃣ تشغيل البوت بنظام Polling المستقر المباشر بعيداً عن تعقيدات الـ Webhook
+    application = Application.builder().token(TOKEN).build()
+    
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(CommandHandler("video", video_command))
+    application.add_handler(CommandHandler("mp3", mp3_command))
+    
+    print("[+] البوت وخادم الويب يعملان معاً بسلام الحين...")
+    application.run_polling(drop_pending_updates=True)
 
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 8080))
-    app.run(host="0.0.0.0", port=port)
+    main()
