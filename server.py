@@ -8,9 +8,8 @@ from http.server import SimpleHTTPRequestHandler, HTTPServer
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 
-TOKEN = "8869258158:AAHQPSlAHl4Bqyx5o8Xi8G0Cf3uzxMaDvCo"
+TOKEN = "8836632507:AAGe1mHJMBlRaLCUoveAJA_j700xUvxNWEQ"
 
-# 🛰️ محرك ويب مدمج لفتح بورت الاتصال وضخ نبضات منع النوم التلقائي
 def run_dummy_server():
     class DummyHandler(SimpleHTTPRequestHandler):
         def do_GET(self):
@@ -29,7 +28,7 @@ def run_dummy_server():
                 requests.get(f"http://localhost:{port}", timeout=5)
             except Exception:
                 pass
-            time.sleep(240) # نبضة تنشيط قسرية كل 4 دقائق لمنع السيرفر من النوم كلياً
+            time.sleep(240)
             
     threading.Thread(target=keep_alive_pinger, daemon=True).start()
     server.serve_forever()
@@ -37,8 +36,7 @@ def run_dummy_server():
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     try:
         await update.message.reply_text(
-            f"🎬 مرحباً بك يا {update.effective_user.first_name} في بوت صيد الميديا العالمي المطور! 🤖⚡\n\n"
-            "البوت محصن تماماً الآن ويعمل على مدار الـ 24 ساعة بدون نوم 🌐.\n\n"
+            f"🎬 مرحباً بك يا {update.effective_user.first_name} في بوت صيد الميديا الخارق! 🤖⚡\n\n"
             "📥 لجلب ملفك فوراً وبدون تعليق، أرسل الرابط بالتنسيق التالي في الشات الحين:\n"
             "🔹 لتحميل الفيديو اكتب: `/video رابط_الفيديو`\n"
             "🔹 لتحميل صوت MP3 اكتب: `/mp3 رابط_الفيديو`"
@@ -60,7 +58,7 @@ async def video_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         'quiet': True,
         'no_warnings': True,
         'impersonate': 'chrome',
-        'extractor_args': {'youtube': {'player_client': ['android', 'web']}}, # حيلة ذكية لتخطي حظر مراكز البيانات 🎯
+        'extractor_args': {'youtube': {'player_client': ['ios', 'android']}}, # استخدام مشغل الهواتف الذكية لتخطي حظر مراكز البيانات 🎯
     }
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -71,7 +69,7 @@ async def video_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         os.remove(filename)
         await status_msg.delete()
     except Exception:
-        await status_msg.edit_text("❌ عذراً! المنصة تفرض حماية مؤقتة على هذا الرابط حالياً، جرب رابطاً آخر بسلام.")
+        await status_msg.edit_text("❌ عذراً! المنصة تفرض حماية على هذا الرابط حالياً، جرب رابطاً آخر بسلام.")
 
 async def mp3_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not context.args:
@@ -92,7 +90,7 @@ async def mp3_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         'quiet': True,
         'no_warnings': True,
         'impersonate': 'chrome',
-        'extractor_args': {'youtube': {'player_client': ['android', 'web']}}, # كسر حظر يوتيوب الصارم 🎯
+        'extractor_args': {'youtube': {'player_client': ['ios', 'android']}}, # كسر حظر يوتيوب عبر مشغل الـ iOS السريع 🎯
     }
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -112,7 +110,6 @@ def main():
         
     threading.Thread(target=run_dummy_server, daemon=True).start()
     
-    # حلقة تشغيل فولاذية تعيد إحياء البوت فوراً عند حدوث أي خطأ بدون أن ينام أو يموت أبداً
     while True:
         try:
             application = Application.builder().token(TOKEN).build()
@@ -122,7 +119,7 @@ def main():
             print("[+] البوت المحصن مستيقظ ويعمل الحين...")
             application.run_polling(drop_pending_updates=True)
         except Exception:
-            time.sleep(3) # إعادة تشغيل تلقائي في حال حدوث كراش قسري
+            time.sleep(3)
 
 if __name__ == '__main__':
     main()
