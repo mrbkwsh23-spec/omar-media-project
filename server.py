@@ -8,7 +8,7 @@ from http.server import SimpleHTTPRequestHandler, HTTPServer
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
 
-TOKEN = "8836632507:AAGe1mHJMBlRaLCUoveAJA_j700xUvxNWEQ"
+TOKEN = "8822272767:AAG2zaNEszg98gSEBUubJ4CuMccSjXI4x0o"
 
 # ذاكرة مؤقتة معزولة لحفظ الروابط بدقة
 user_links = {}
