@@ -1,23 +1,32 @@
 import os
 import re
 import asyncio
-import threading
 import yt_dlp
-from flask import Flask
+from flask import Flask, request
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
+# توكن البوت الخاص بك
 TOKEN = "8836632507:AAGe1mHJMBlRaLCUoveAJA_j700xUvxNWEQ"
 
+# رابط السيرفر الخاص بك على Render (سيتم قراءته تلقائياً)
+RENDER_EXTERNAL_URL = os.environ.get("RENDER_EXTERNAL_URL")
+
 app = Flask(__name__)
+application = Application.builder().token(TOKEN).build()
 
 @app.route('/')
 def home():
-    return "البوت يعمل بنجاح على Render! 🚀"
+    return "البوت يعمل بنجاح بنظام Webhook على Render! 🚀"
 
-def run_flask():
-    port = int(os.environ.get("PORT", 8080))
-    app.run(host="0.0.0.0", port=port)
+# استقبال التحديثات من تليجرام مباشرة
+@app.route(f'/{TOKEN}', methods=['POST'])
+def telegram_webhook():
+    if request.method == "POST":
+        update = Update.de_json(request.get_json(force=True), application.bot)
+        # تشغيل التحديث في بيئة حلقة الأحداث (Event Loop) لتفادي التعليق
+        asyncio.run(application.process_update(update))
+    return "OK", 200
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(
@@ -34,7 +43,6 @@ async def video_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     url = context.args[0]
     status_msg = await update.message.reply_text("⏳ جاري سحب وتحميل الفيديو سحابياً.. يرجى الانتظار ثوانٍ...")
     
-    # ⚙️ تم تحديث الإعدادات هنا لتخطي حظر يوتيوب للسيرفرات
     ydl_opts = {
         'format': 'best[ext=mp4]/best',
         'outtmpl': 'downloads/%(id)s_video.%(ext)s',
@@ -44,8 +52,6 @@ async def video_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         'nocheckcertificate': True,
         'http_headers': {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-            'Accept-Language': 'en-US,en;q=0.9',
         }
     }
     try:
@@ -57,7 +63,7 @@ async def video_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         if os.path.exists(filename):
             os.remove(filename)
     except Exception as e:
-        await update.message.reply_text("❌ عذراً! الرابط محمي أو السيرفر محظور مؤقتاً من يوتيوب، يرجى المحاولة لاحقاً.")
+        await update.message.reply_text("❌ عذراً! الرابط محمي أو السيرفر محظور مؤقتاً من يوتيوب.")
     finally:
         try: await status_msg.delete()
         except: pass
@@ -69,7 +75,6 @@ async def mp3_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     url = context.args[0]
     status_msg = await update.message.reply_text("⏳ جاري استخراج وتجهيز ملف الـ MP3 ناصع النقاء الحين...")
     
-    # ⚙️ تم تحديث الإعدادات هنا لتخطي حظر يوتيوب للسيرفرات
     ydl_opts = {
         'format': 'bestaudio/best',
         'outtmpl': 'downloads/%(id)s_audio.%(ext)s',
@@ -84,8 +89,6 @@ async def mp3_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         'nocheckcertificate': True,
         'http_headers': {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-            'Accept-Language': 'en-US,en;q=0.9',
         }
     }
     try:
@@ -98,26 +101,25 @@ async def mp3_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         if os.path.exists(filename_mp3):
             os.remove(filename_mp3)
     except Exception as e:
-        await update.message.reply_text("❌ فشل استخراج الـ MP3 بسبب قيود يوتيوب على السيرفر.")
+        await update.message.reply_text("❌ فشل استخراج الـ MP3 بسبب قيود المنصة على السيرفر.")
     finally:
         try: await status_msg.delete()
         except: pass
 
-def main():
-    if not os.path.exists('downloads'):
-        os.makedirs('downloads')
-
-    flask_thread = threading.Thread(target=run_flask)
-    flask_thread.daemon = True
-    flask_thread.start()
-
-    application = Application.builder().token(TOKEN).build()
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(CommandHandler("video", video_command))
-    application.add_handler(CommandHandler("mp3", mp3_command))
-    
-    print("[+] البوت وخادم الويب يعملان الآن بنجاح...")
-    application.run_polling(drop_pending_updates=True)
+# تسجيل الأوامر
+application.add_handler(CommandHandler("start", start))
+application.add_handler(CommandHandler("video", video_command))
+application.add_handler(CommandHandler("mp3", mp3_command))
 
 if __name__ == '__main__':
-    main()
+    if not os.path.exists('downloads'):
+        os.makedirs('downloads')
+        
+    # ضبط الـ Webhook مع تليجرام تلقائياً عند إقلاع السيرفر
+    if RENDER_EXTERNAL_URL:
+        asyncio.run(application.bot.set_webhook(url=f"{RENDER_EXTERNAL_URL}/{TOKEN}"))
+        print(f"[+] Webhook set successfully to: {RENDER_EXTERNAL_URL}")
+    
+    # تشغيل خادم الويب
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host="0.0.0.0", port=port)
