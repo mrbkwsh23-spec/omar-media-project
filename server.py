@@ -7,11 +7,11 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
 TOKEN = "8836632507:AAGe1mHJMBlRaLCUoveAJA_j700xUvxNWEQ"
-RENDER_EXTERNAL_URL = "https://omar-media-project.onrender.com"
+RENDER_EXTERNAL_URL = "https://onrender.com"
 
 app = Flask(__name__)
 
-# بناء التطبيق وتهيئته للعمل الفوري
+# بناء كائن التطبيق بشكل عام
 application = Application.builder().token(TOKEN).build()
 
 @app.route('/')
@@ -22,12 +22,15 @@ def home():
 def telegram_webhook():
     if request.method == "POST":
         try:
-            # قراءة التحديث القادم من تليجرام
             update_data = request.get_json(force=True)
             update = Update.de_json(update_data, application.bot)
             
-            # الطريقة الصحيحة والمضمونة لإجبار تليجرام على معالجة الرد وإرساله للشات فوراً
-            asyncio.run_coroutine_threadsafe(application.process_update(update), application.loop)
+            # جلب حلقة الأحداث الحالية وتشغيل معالجة التحديث بداخلها بأمان
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                loop.create_task(application.process_update(update))
+            else:
+                loop.run_until_complete(application.process_update(update))
         except Exception as e:
             print(f"Error processing update: {e}")
             
@@ -116,18 +119,18 @@ application.add_handler(CommandHandler("start", start))
 application.add_handler(CommandHandler("video", video_command))
 application.add_handler(CommandHandler("mp3", mp3_command))
 
-if __name__ == '__main__':
+# دالة غير متزامنة لتهيئة البوت وضبط الـ Webhook قبل تشغيل Flask
+async def init_bot():
     if not os.path.exists('downloads'):
         os.makedirs('downloads')
-        
-    # تهيئة حلقة الأحداث الأساسية للتطبيق بشكل مسبق لضمان عمل الروبوت في الخلفية
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop.run_until_complete(application.initialize())
-    loop.run_until_complete(application.bot.set_webhook(url=f"{RENDER_EXTERNAL_URL}/{TOKEN}"))
-    application.loop = loop
-    
+    await application.initialize()
+    await application.bot.set_webhook(url=f"{RENDER_EXTERNAL_URL}/{TOKEN}")
     print(f"[+] Webhook successfully linked to {RENDER_EXTERNAL_URL}")
-    
+
+# تشغيل التهيئة
+loop = asyncio.get_event_loop()
+loop.run_until_complete(init_bot())
+
+if __name__ == '__main__':
     port = int(os.environ.get("PORT", 8080))
     app.run(host="0.0.0.0", port=port)
