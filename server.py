@@ -13,7 +13,7 @@ app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return "السيرفر مستقر وبوت الصيد يعمل بنظام الحماية الذكي! 🚀"
+    return "السيرفر مستقر وبوت الصيد يعمل بنظام الحماية الحاسم! 🚀"
 
 def run_flask():
     port = int(os.environ.get("PORT", 8080))
@@ -34,7 +34,7 @@ async def video_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     url = context.args[0]
     status_msg = await update.message.reply_text("⏳ جاري سحب وتحميل الفيديو سحابياً بأعلى سرعة.. يرجى الانتظار ثوانٍ...")
     
-    # ⚙️ ميزة يوتيوب الرسمية لتخطي الحظر السحابي بدون ملفات كوكيز
+    # ⚙️ الإعدادات الحاسمة لتخطي حظر يوتيوب وتيك توك سحابياً بدون كوكيز أو رموز
     ydl_opts = {
         'format': 'best[ext=mp4]/best',
         'outtmpl': 'downloads/%(id)s_video.%(ext)s',
@@ -44,9 +44,17 @@ async def video_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         'nocheckcertificate': True,
         'extractor_args': {
             'youtube': {
-                'oauth': True,       # 🔥 تفعيل ميزة تسجيل الدخول الرسمي الذكي
-                'player_client': ['android', 'web']
+                'player_client': ['ios', 'android'], # استخدام عملاء الهواتف الرسمية لتخطي الحظر
+                'skip': ['dash', 'hls']
+            },
+            'tiktok': {
+                'app_version': ['20.2.1']
             }
+        },
+        'http_headers': {
+            'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Mobile/15E148 Safari/604.1',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
         }
     }
     try:
@@ -59,7 +67,7 @@ async def video_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
             os.remove(filename)
     except Exception as e:
         print(f"YTDL Error: {e}")
-        await update.message.reply_text("❌ عذراً! الرابط محمي، جرب رابط منصة أخرى أو أرسل لي الرمز إذا ظهر لك باللوغات الحين.")
+        await update.message.reply_text("❌ عذراً! الرابط محمي حالياً من المنصة أو السيرفر بحاجة لتحديث، جرب لاحقاً.")
     finally:
         try: await status_msg.delete()
         except: pass
@@ -80,9 +88,15 @@ async def mp3_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         'nocheckcertificate': True,
         'extractor_args': {
             'youtube': {
-                'oauth': True,       # 🔥 تفعيل ميزة تسجيل الدخول الرسمي الذكي
-                'player_client': ['android', 'web']
+                'player_client': ['ios', 'android'],
+                'skip': ['dash', 'hls']
+            },
+            'tiktok': {
+                'app_version': ['20.2.1']
             }
+        },
+        'http_headers': {
+            'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Mobile/15E148 Safari/604.1',
         }
     }
     try:
@@ -95,7 +109,7 @@ async def mp3_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             os.remove(filename)
     except Exception as e:
         print(f"YTDL Error: {e}")
-        await update.message.reply_text("❌ فشل استخراج الصوت، يرجى التحقق من الرابط الحين.")
+        await update.message.reply_text("❌ فشل استخراج الصوت، تأكد من صحة الرابط الحين.")
     finally:
         try: await status_msg.delete()
         except: pass
@@ -114,7 +128,7 @@ def main():
     application.add_handler(CommandHandler("video", video_command))
     application.add_handler(CommandHandler("mp3", mp3_command))
     
-    print("[+] البوت شغال بالخلفية وجاهز للتفعيل الذكي بدون كوكيز...")
+    print("[+] البوت انطلق بالخلفية بنظام المحاكاة الذكي...")
     application.run_polling(drop_pending_updates=True)
 
 if __name__ == '__main__':
