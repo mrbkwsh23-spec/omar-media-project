@@ -4,5 +4,7 @@
 
 .youtube.com	TRUE	/	FALSE	1798881600	VISITOR_INFO1_LIVE	fX-UXZp_oX0
 .youtube.com	TRUE	/	FALSE	1798881600	STID	1
-.youtube.com	TRUE	/	FALSE	1798881600	PREF	f1=50000000&tz=Africa.Algiers
+.youtube.com	TRUE	/	FALSE	1798881600	PREF	f1=50000000&tz=Africa/Algiers
+.youtube.com	TRUE	/	FALSE	1798881600	YSC	w_X_qXp_oX0
 .tiktok.com	TRUE	/	FALSE	1798881600	tt_webid_v2	7123456789012345678
+.tiktok.com	TRUE	/	FALSE	1798881600	sessionid	tt_session_active_2026
