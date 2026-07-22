@@ -1,9 +1,22 @@
 import os
+import threading
 import yt_dlp
+from flask import Flask
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
 TOKEN = "8836632507:AAGe1mHJMBlRaLCUoveAJA_j700xUvxNWEQ"
+
+# 🌐 إنشاء خادم ويب مصغر ليتجاوب مع موقع cron-job.org ويمنع نوم السيرفر
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "السيرفر مستقر وبوت الصيد المحصن شغال بالخلفية 24 ساعة! 🚀"
+
+def run_flask():
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host="0.0.0.0", port=port)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
@@ -21,7 +34,7 @@ async def download_media(update: Update, context: ContextTypes.DEFAULT_TYPE, med
     url = context.args[0].strip()
     status_msg = await update.message.reply_text("⏳ جاري التحميل من السيرفر السحابي...")
 
-    # 🔥 تحديث الإعدادات هنا لدمج عملاء الهواتف الرسمية لتخطي حظر يوتيوب وتيك توك تلقائياً
+    # 🔥 تحديث الإعدادات لدمج عملاء الهواتف الرسمية لتخطي حظر يوتيوب وتيك توك تلقائياً سحابياً
     base_opts = {
         'outtmpl': 'downloads/%(id)s.%(ext)s',
         'restrictfilenames': True,
@@ -32,7 +45,7 @@ async def download_media(update: Update, context: ContextTypes.DEFAULT_TYPE, med
         'extractor_retries': 3,
         'extractor_args': {
             'youtube': {
-                'player_client': ['ios', 'android'], # محاكاة هواتف لتجاوز حظر السيرفرات السحابية
+                'player_client': ['ios', 'android'], # محاكاة الهواتف الرسمية لفك حظر الخوادم
                 'skip': ['dash', 'hls']
             },
             'tiktok': {
@@ -59,13 +72,12 @@ async def download_media(update: Update, context: ContextTypes.DEFAULT_TYPE, med
 
             final_filename = filename
 
-            # ضغط تلقائي إذا تجاوز 48 ميجا
+            # ميزة الضغط التلقائي الذكي المضافة بكودك
             if file_size_mb > 48:
                 await status_msg.edit_text(f"📦 الفيديو كبير ({file_size_mb:.1f} MB).\nجاري الضغط بذكاء لتليجرام...")
                 
                 compressed = f"downloads/compressed_{os.path.basename(filename)}"
                 
-                # ضغط احترافي
                 os.system(
                     f'ffmpeg -i "{filename}" '
                     f'-vf "scale=1280:-2" '
@@ -84,7 +96,6 @@ async def download_media(update: Update, context: ContextTypes.DEFAULT_TYPE, med
                 else:
                     await status_msg.edit_text("⚠️ الضغط لم ينجح، سيتم إرسال الملف الأصلي.")
 
-            # إرسال الفيديو
             await status_msg.edit_text("📤 جاري الإرسال إليك...")
             with open(final_filename, 'rb') as f:
                 await update.message.reply_video(
@@ -94,12 +105,11 @@ async def download_media(update: Update, context: ContextTypes.DEFAULT_TYPE, med
                             f"🌐 المصدر: {url[:50]}..."
                 )
             
-            # تنظيف
             for f_path in [filename, final_filename]:
                 if os.path.exists(f_path):
                     os.remove(f_path)
 
-        else:  # MP3
+        else:  # صيغة الـ MP3
             ydl_opts = {
                 **base_opts,
                 'format': 'bestaudio/best',
@@ -128,7 +138,7 @@ async def download_media(update: Update, context: ContextTypes.DEFAULT_TYPE, med
     except Exception as e:
         error = str(e).lower()
         if "403" in error or "forbidden" in error or "sign in" in error:
-            await status_msg.edit_text("❌ يوتيوب يفرض حظر حماية على هذا الرابط حالياً.")
+            await status_msg.edit_text("❌ يوتيوب أو المنصة تفرض حظراً على الرابط داخل هذا السيرفر حالياً.")
         elif "unavailable" in error or "private" in error:
             await status_msg.edit_text("❌ الفيديو غير متاح أو خاص.")
         else:
@@ -138,13 +148,18 @@ def main():
     if not os.path.exists('downloads'):
         os.makedirs('downloads')
     
+    # 🧵 تشغيل خادم الويب بخلفية السيرفر ليتصل بموقع المنبه دون تجميد البوت
+    flask_thread = threading.Thread(target=run_flask)
+    flask_thread.daemon = True
+    flask_thread.start()
+
     app = Application.builder().token(TOKEN).build()
     
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("video", lambda u, c: download_media(u, c, "video")))
     app.add_handler(CommandHandler("mp3", lambda u, c: download_media(u, c, "mp3")))
     
-    print("[+] 🚀 بوت صيد الميديا الأقوى شغال الآن بالتحصين البرمجي...")
+    print("[+] 🚀 بوت صيد الميديا المحصن والمضاد للنوم شغال الآن...")
     app.run_polling(drop_pending_updates=True)
 
 if __name__ == '__main__':
