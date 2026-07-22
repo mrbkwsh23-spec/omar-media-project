@@ -8,12 +8,11 @@ from telegram.ext import Application, CommandHandler, ContextTypes
 
 TOKEN = "8836632507:AAGe1mHJMBlRaLCUoveAJA_j700xUvxNWEQ"
 
-# 🌐 خادم الويب الأساسي لمنع نوم السيرفر بالتعاون مع cron-job
 app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return "السيرفر مستقر وبوت صيد الميديا يعمل بنجاح! 🚀"
+    return "السيرفر مستقر وبوت الصيد يعمل بنجاح ساحق! 🚀"
 
 def run_flask():
     port = int(os.environ.get("PORT", 8080))
@@ -31,9 +30,10 @@ async def video_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     if not context.args:
         await update.message.reply_text("⚠️ يرجى كتابة الرابط بعد الأمر هكذا:\n`/video رابط_الفيديو`")
         return
-    url = context.args[0]
-    await update.message.reply_text("⏳ جاري سحب وتحميل الفيديو سحابياً بأعلى سرعة.. يرجى الانتظار ثوانٍ...")
+    url = context.args[0].strip()
+    status_msg = await update.message.reply_text("⏳ جاري سحب وتحميل الفيديو سحابياً بأعلى سرعة.. يرجى الانتظار ثوانٍ...")
     
+    # ⚙️ إعدادات المحاكاة الذكية لكسر حظر يوتيوب وتيك توك بدون كوكيز
     ydl_opts = {
         'format': 'best',
         'outtmpl': 'downloads/%(id)s_video.%(ext)s',
@@ -41,25 +41,38 @@ async def video_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         'quiet': True,
         'no_warnings': True,
         'nocheckcertificate': True,
+        'extractor_args': {
+            'youtube': {
+                'player_client': ['ios', 'android'], # محاكاة التطبيقات الرسمية لفك الحظر سحابياً
+                'skip': ['dash', 'hls']
+            }
+        },
+        'http_headers': {
+            'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Mobile/15E148 Safari/604.1',
+        }
     }
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=True)
             filename = ydl.prepare_filename(info)
         with open(filename, 'rb') as video:
-            await update.message.reply_video(video=video, caption="🎬 تم تحميل الفيديو بنجاح عبر بوت عُمر السحابي!")
+            await update.message.reply_video(video=video, caption="🎬 تم تحميل الفيديو بنجاح عبر بوت عُمر السحابي المطور!")
         if os.path.exists(filename):
             os.remove(filename)
     except Exception as e:
         await update.message.reply_text("❌ عذراً! الرابط محمي من المنصة أو السيرفر محظور حالياً، جرب رابطاً آخر بسلام.")
+    finally:
+        try: await status_msg.delete()
+        except: pass
 
 async def mp3_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not context.args:
         await update.message.reply_text("⚠️ يرجى كتابة الرابط بعد الأمر هكذا:\n`/mp3 رابط_الفيديو`")
         return
-    url = context.args[0]
-    await update.message.reply_text("⏳ جاري استخراج وتجهيز ملف الـ MP3 سحابياً الحين...")
+    url = context.args[0].strip()
+    status_msg = await update.message.reply_text("⏳ جاري استخراج وتجهيز ملف الـ MP3 سحابياً الحين...")
     
+    # ⚙️ إعدادات المحاكاة الذكية لفصل الصوت وتخطي الحظر
     ydl_opts = {
         'format': 'bestaudio/best',
         'outtmpl': 'downloads/%(id)s_audio.%(ext)s',
@@ -72,6 +85,15 @@ async def mp3_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         'quiet': True,
         'no_warnings': True,
         'nocheckcertificate': True,
+        'extractor_args': {
+            'youtube': {
+                'player_client': ['ios', 'android'],
+                'skip': ['dash', 'hls']
+            }
+        },
+        'http_headers': {
+            'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Mobile/15E148 Safari/604.1',
+        }
     }
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -84,12 +106,14 @@ async def mp3_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             os.remove(filename_mp3)
     except Exception as e:
         await update.message.reply_text("❌ فشل استخراج الـ MP3 بسبب حماية المنصة الصارمة حالياً.")
+    finally:
+        try: await status_msg.delete()
+        except: pass
 
 def main():
     if not os.path.exists('downloads'):
         os.makedirs('downloads')
 
-    # تشغيل خادم الويب لمنع النوم بالخلفية
     flask_thread = threading.Thread(target=run_flask)
     flask_thread.daemon = True
     flask_thread.start()
@@ -99,7 +123,7 @@ def main():
     application.add_handler(CommandHandler("video", video_command))
     application.add_handler(CommandHandler("mp3", mp3_command))
     
-    print("[+] البوت السحابي المستقر شغال الآن...")
+    print("[+] البوت السحابي المحصن شغال الآن...")
     application.run_polling(drop_pending_updates=True)
 
 if __name__ == '__main__':
