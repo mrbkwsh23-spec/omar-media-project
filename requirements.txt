@@ -1,5 +1,7 @@
-python-telegram-bot==20.8
+pyTelegramBotAPI
 yt-dlp
-Flask
+deep_translator
+curl-cffi
+flask
 
 
